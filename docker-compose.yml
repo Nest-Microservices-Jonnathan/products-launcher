@@ -29,7 +29,22 @@ services:
       - NATS_SERVERS=nats://nats-server:4222
       - DATABASE_URL=file:./dev.db
  
+  # Orders MS
+  orders-ms:
+    depends_on:
+      - orders-db
+    build: ./orders-ms
+    volumes:
+      - ./orders-ms/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - PORT=3002
+      - DATABASE_URL=postgresql://postgres:123456@orders-db:5432/ordersdb?schema=public
+      - NATS_SERVERS=nats://nats-server:4222
+
+  # Orders DB
   orders-db:
+    container_name: orders-db
     image: postgres:16.2
     restart: always
     volumes:
@@ -40,15 +55,22 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=123456
       - POSTGRES_DB=ordersdb
- 
-  order-ms:
-    depends_on:
-      - orders-db
-    build: ./orders-ms
+
+# ========================= #
+# Payments Microservice
+# ========================= #
+  payments-ms:
+    build: ./payments-ms
     volumes:
-      - ./orders-ms/src:/usr/src/app/src
+      - ./payments-ms/src:/usr/src/app/src
     command: pnpm run start:dev
+    ports:
+      - ${PAYMENTS_MS_PORT}:${PAYMENTS_MS_PORT}
     environment:
-      - PORT=3003
-      - DATABASE_URL=postgresql://postgres:123456@orders-db:5432/ordersdb?schema=public
-      - NATS_SERVERS=nats://nats-server:4222 
+      - PORT=${PAYMENTS_MS_PORT}
+      - NATS_SERVERS=nats://nats-server:4222
+      - STRIPE_SECRET=${STRIPE_SECRET}
+      - STRIPE_ENDPOINT_SECRET=${STRIPE_ENDPOINT_SECRET}
+      - STRIPE_SUCCESS_URL=${STRIPE_SUCCESS_URL}
+      - STRIPE_CANCEL_URL=${STRIPE_CANCEL_URL}
+   
