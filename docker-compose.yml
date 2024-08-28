@@ -23,6 +23,8 @@ services:
 # Auth Microservice
 # ========================= #
   auth-ms:
+    depends_on:
+      - auth-db
     build: ./auth-ms
     volumes:
       - ./auth-ms/src:/usr/src/app/src
@@ -30,6 +32,18 @@ services:
     environment:
       - PORT=3005
       - NATS_SERVERS=nats://nats-server:4222
+      - DATABASE_URL=${AUTH_DATABASE_URL}
+
+  auth-db:
+    image: mongo:5
+    container_name: auth-db
+    ports:
+      - 27017:27017
+    volumes:
+      - ./auth-ms/mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
 
   # products-ms:
   #   build: ./products-ms
